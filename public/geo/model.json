@@ -1,0 +1,193 @@
+{
+  "flood": {
+    "method": "terrain-based pluvial susceptibility screen",
+    "dem": "Copernicus DEM GLO-30",
+    "resolution_m": 17.3,
+    "parameters": {
+      "pond_scale_m": 6.0,
+      "basin_scale_m": 14.0,
+      "flat_scale": 0.03,
+      "low_scale_m": 28.0,
+      "weights": {
+        "depression_depth_300m": 0.2,
+        "depression_depth_1200m": 0.3,
+        "inverse_slope": 0.08,
+        "inverse_elevation": 0.32,
+        "coastal_proximity": 0.1
+      }
+    },
+    "scenarios": {
+      "now": 1.0,
+      "2030": 1.14,
+      "2050": 1.34
+    },
+    "calibration": "depth anchored to the April 2024 UAE 1-in-100-year event",
+    "rejected_terms": [
+      "D8 flow accumulation (no improvement in validation separation)"
+    ]
+  },
+  "heat": {
+    "method": "ERA5 reanalysis baseline + CMIP6 SSP2-4.5 deltas + built-up UHI proxy",
+    "baseline_years": "2015-2024",
+    "baseline": {
+      "tmax_mean_c": 33.43,
+      "tmax_p99_c": 44.7,
+      "tmax_record_c": 47.3,
+      "tmin_mean_c": 22.97,
+      "days_over_40c": 72.1,
+      "days_over_45c": 2.8,
+      "nights_over_30c": 45.9,
+      "cdd_18c": 3683.0
+    },
+    "scenarios": {
+      "now": 0.0,
+      "2030": 0.9,
+      "2050": 2.2
+    },
+    "detail": {
+      "now": {
+        "delta_c": 0.0,
+        "days_over_40c": 72.1,
+        "days_over_45c": 2.8,
+        "days_over_50c": 0.0,
+        "nights_over_30c": 45.9,
+        "score": 28.6
+      },
+      "2030": {
+        "delta_c": 0.9,
+        "days_over_40c": 91.3,
+        "days_over_45c": 8.6,
+        "days_over_50c": 0.0,
+        "nights_over_30c": 63.8,
+        "score": 47.4
+      },
+      "2050": {
+        "delta_c": 2.2,
+        "days_over_40c": 121.3,
+        "days_over_45c": 23.4,
+        "days_over_50c": 0.0,
+        "nights_over_30c": 94.5,
+        "score": 80.7
+      }
+    }
+  },
+  "validation": {
+    "sites": [
+      {
+        "label": "Emirates Golf Club",
+        "flood": 63.6,
+        "heat": 32.3
+      },
+      {
+        "label": "Al Quoz Industrial",
+        "flood": 58.2,
+        "heat": 30.2
+      },
+      {
+        "label": "Discovery Gardens",
+        "flood": 53.1,
+        "heat": 19.2
+      },
+      {
+        "label": "Jebel Ali / JAFZA",
+        "flood": 68.4,
+        "heat": 16.6
+      },
+      {
+        "label": "Mirdif",
+        "flood": 35.7,
+        "heat": 31.3
+      },
+      {
+        "label": "Al Nahda",
+        "flood": 40.2,
+        "heat": 19.9
+      },
+      {
+        "label": "Business Bay",
+        "flood": 70.4,
+        "heat": 20.5
+      },
+      {
+        "label": "Dubai Marina",
+        "flood": 100.0,
+        "heat": 19.3
+      },
+      {
+        "label": "Al Barsha",
+        "flood": 43.4,
+        "heat": 26.9
+      },
+      {
+        "label": "International City",
+        "flood": 47.4,
+        "heat": 19.0
+      },
+      {
+        "label": "Silicon Oasis",
+        "flood": 59.0,
+        "heat": 19.9
+      },
+      {
+        "label": "Jumeirah",
+        "flood": 40.4,
+        "heat": 35.5
+      },
+      {
+        "label": "Zabeel",
+        "flood": 59.3,
+        "heat": 31.7
+      },
+      {
+        "label": "Al Karama",
+        "flood": 46.1,
+        "heat": 29.2
+      },
+      {
+        "label": "Deira",
+        "flood": 90.2,
+        "heat": 27.1
+      },
+      {
+        "label": "Bur Dubai",
+        "flood": 58.2,
+        "heat": 28.2
+      },
+      {
+        "label": "Dubai South",
+        "flood": 14.7,
+        "heat": 22.4
+      },
+      {
+        "label": "Al Awir",
+        "flood": 60.1,
+        "heat": 16.3
+      },
+      {
+        "label": "Nad Al Sheba",
+        "flood": 55.9,
+        "heat": 32.7
+      },
+      {
+        "label": "Muhaisnah",
+        "flood": 69.4,
+        "heat": 34.9
+      }
+    ],
+    "n_sites": 20,
+    "built_up_quartile_threshold": 54.8,
+    "built_up_p90_threshold": 66.7,
+    "captured_in_top_quartile": 12,
+    "capture_rate": 0.6,
+    "median_percentile_rank": 0.806,
+    "expected_by_chance": 5.0
+  },
+  "grid": {
+    "x0": 5348,
+    "y0": 3498,
+    "z": 13,
+    "width": 3072,
+    "height": 3328,
+    "meters_per_px": 17.3
+  }
+}
