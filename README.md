@@ -7,8 +7,8 @@ bank cannot currently answer cheaply: **which buildings in our collateral pool w
 how deep will the water get, what does that do to the loan-to-value, and what do we have to
 disclose?**
 
-Every number in the app is produced by the Python pipeline in this repository from public
-data. Nothing is hardcoded, and the whole thing runs in a browser with no backend.
+Every hazard score and loss figure is computed by the Python pipeline in this repository
+from public data, and the whole thing runs in a browser with no backend.
 
 Built for **UAE Hackathon 2026, Pioneers track** (HCT Dubai Student Campus, 9-11 November).
 
@@ -17,8 +17,8 @@ Built for **UAE Hackathon 2026, Pioneers track** (HCT Dubai Student Campus, 9-11
 ## The problem
 
 A corporate loan is usually secured on a building. That building sits at a specific point on
-a specific piece of terrain, and in this climate that point now has a measurable chance of
-being under water once a decade and 120 days a year above 40 °C.
+a specific piece of terrain. In a city that already spends 72 days a year above 40 °C, and
+will spend 120 by 2050, that point has a measurable chance of being under water.
 
 Banks know this in aggregate but not in detail. Property-level catastrophe models cost six
 figures a year and are built for insurers, not lenders. So physical risk gets handled as a
@@ -32,8 +32,8 @@ working answer to what that looks like when you build it from data you can actua
 
 ## What it does
 
-Five screens, one book: 27 borrowers, 68 geocoded facilities, AED 5.69bn of exposure secured
-on AED 7.61bn of collateral.
+Five screens and a borrower drill-down, over one book: 27 borrowers, 68 geocoded facilities,
+AED 5.69bn of exposure secured on AED 7.61bn of collateral.
 
 | Screen | What it answers |
 |---|---|
@@ -52,16 +52,17 @@ Scenarios switch the entire application at once: **baseline**, **2030** and **20
 
 ```
   Copernicus GLO-30 DEM ─┐
-  Overture water         ├─► terrain grid ─► pluvial susceptibility ─┐
-  Overture buildings     │   (17.3 m/px)                             │
-  ERA5 2015-24 + CMIP6 ──┘                                           ├─► score grid
-                                                                     │   (384 x 416)
-                                          portfolio.json ────────────┤
-                                                                     ▼
-                                              per-facility depth, damage, loss, EAL
-                                                                     │
-                                                                     ▼
-                                              haircut ─► post-LTV ─► CRFR2 determination
+  Overture water         ├─► terrain grid (17.3 m/px) ─► pluvial susceptibility ─┐
+  Overture buildings ────┘                                                       │
+                                                                                 ├─► score grid
+  ERA5 2015-24 + CMIP6 SSP2-4.5 ──────────────► heat climatology ────────────────┘   (384 x 416)
+                                                                                 │
+  portfolio.json (borrowers, facilities, collateral) ────────────────────────────┤
+                                                                                 ▼
+                                             per-facility depth ─► damage ─► loss ─► EAL
+                                                                                 │
+                                                                                 ▼
+                                             haircut ─► post-haircut LTV ─► CRFR2 determination
 ```
 
 The pipeline runs offline. It writes a score grid, three flood overlays, three heat overlays
@@ -169,14 +170,14 @@ prices a ten-year facility in Business Bay.
 Each determination is mapped to the clauses it draws on, so the output is an evidence record
 rather than a dashboard:
 
-| Clause | What it requires | Where Elevation answers it |
+| Clause | Requirement | What Elevation produces |
 |---|---|---|
-| §4.7.2 | Identify physical risk exposures | Geolocated facility register |
-| §4.7.4 | Assess exposure to acute hazards | 1-in-100 pluvial depth and damage |
-| §4.7.5 | Assess exposure to chronic hazards | Heat days above 40 °C, 2030/2050 |
-| §4.7.11 | Evaluate collateral and credit impact | Post-haircut LTV, breach flags |
-| §4.10.2 | Scenario analysis and stress testing | Three forward scenarios, whole book |
-| §4.11.6 | Board and ICAAP/ORSA reporting | CRFR2 disclosure export, audit JSON |
+| §4.7.2 | Customer and portfolio level | Exposure and 1-in-100 loss per borrower, and the same aggregated across the book |
+| §4.7.4 | Customer's exposure to climate risk | Modelled pluvial score and worst ponding depth at each facility |
+| §4.7.5 | Transmission channels | Collateral haircut and revenue at risk, by sector |
+| §4.7.11 | Geographical risk concentrations | Facilities and districts per borrower, with correlated hazard |
+| §4.10.2 | Collateral haircuts | Haircut applied to collateral before it enters the LTV |
+| §4.11.6 | Provisions, capital and liquidity | Expected annual loss against the margin the relationship earns |
 
 Both exports are real files: a CSV of all 27 exposures and a JSON audit trail with the model
 provenance attached.
@@ -198,9 +199,8 @@ npm run preview  # serve the build
 npm run lint     # oxlint
 ```
 
-No API keys. No database. No server. The map basemap is OpenFreeMap, which is free and
-keyless, so the app runs on a laptop with no network configuration beyond internet access
-for tiles.
+No API keys, no database, no server. The basemap is OpenFreeMap, which is free and keyless,
+so the only network dependency is tile fetching.
 
 ### Rebuilding the model
 
@@ -290,11 +290,8 @@ the working prototype behind both.
 | Market potential and commercialisation | 15% | Sold to banks and regulators as a screening layer under cat models |
 | Presentation, clarity and creativity | 25% | The five screens above |
 
----
+Weights as published on hackathon.ae for the Pioneers track.
 
-## Team
-
-Built during the Dubai leg of UAE Hackathon 2026.
-
-Open to questions, scrutiny and criticism of the model. The validation is reproducible and
-the failure modes are documented on purpose.
+Built during the Dubai leg of UAE Hackathon 2026. The model is open to scrutiny: the
+validation is reproducible from `pipeline/tune.py`, and the failure modes are documented on
+purpose rather than hidden.
