@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { ArrowRight, Search } from 'lucide-react'
 import { portfolio } from '@/lib/portfolio'
 import { useStore } from '@/lib/store'
-import { aed, determine, money, pct } from '@/lib/format'
+import { aed, DETERMINATION_COLOR, determine, money, pct } from '@/lib/format'
 import { Label, Meter, Panel, RiskPill, Segmented } from '@/components/ui/primitives'
 import { CustomerDetail } from './CustomerDetail'
 import type { Scenario } from '@/lib/types'
@@ -127,7 +127,15 @@ function Register({ scenario }: { scenario: Scenario }) {
                   <tr
                     key={c.id}
                     onClick={() => setSelectedCustomer(c.id)}
-                    className="cursor-pointer border-t border-line/70 transition-colors hover:bg-white/[0.028]"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setSelectedCustomer(c.id)
+                      }
+                    }}
+                    tabIndex={0}
+                    aria-label={`Open ${c.name}`}
+                    className="cursor-pointer border-t border-line/70 transition-colors hover:bg-white/[0.028] focus:bg-white/[0.04] focus:outline-none"
                   >
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
@@ -175,21 +183,11 @@ function Register({ scenario }: { scenario: Scenario }) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-[11px] text-ink-3">
-                      {c.facilities.length} · {c.facilities[0]?.district.split(' ')[0]}
+                    <td className="max-w-[150px] truncate px-4 py-2.5 text-[11px] text-ink-3">
+                      {c.facilities.length} · {c.facilities[0]?.district}
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <span
-                        className="text-[10.5px]"
-                        style={{
-                          color:
-                            d.state === 'Subject'
-                              ? '#f04438'
-                              : d.state === 'Not subject'
-                                ? '#34d399'
-                                : '#fbbf24',
-                        }}
-                      >
+                      <span className="text-[10.5px]" style={{ color: DETERMINATION_COLOR[d.state] }}>
                         {d.state}
                       </span>
                     </td>

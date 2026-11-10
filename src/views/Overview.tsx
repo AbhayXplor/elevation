@@ -1,7 +1,8 @@
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import { portfolio } from '@/lib/portfolio'
 import { useStore } from '@/lib/store'
-import { aed, band, BAND_COLOR, determine, money, pct, ramp } from '@/lib/format'
+import { useModel } from '@/lib/model'
+import { aed, band, BAND_COLOR, DETERMINATION_COLOR, determine, money, pct, ramp } from '@/lib/format'
 import { Kpi } from '@/components/Kpi'
 import { Button } from '@/components/ui/button'
 import { DotStrip, Label, Meter, Panel, PanelHeader, RiskPill } from '@/components/ui/primitives'
@@ -11,6 +12,7 @@ const SCEN_LABEL: Record<Scenario, string> = { now: 'Baseline', '2030': '2030', 
 
 export function Overview() {
   const { scenario, setScenario, setView, setSelectedCustomer } = useStore()
+  const { model } = useModel()
   const t = portfolio.totals
   const s = t[scenario]
   const base = t.now
@@ -64,7 +66,7 @@ export function Overview() {
             value={money(s.loss100)}
             unit="AED"
             tone="danger"
-            sub={`${pct(s.loss100PctAsset)} of secured asset value impaired`}
+            sub={`${pct(s.loss100PctAsset)} of AED ${money(t.assetValue)} modelled asset value`}
             bar={<Meter value={s.loss100PctAsset} max={0.25} color="#f04438" height={3} />}
           />
           <Kpi
@@ -179,9 +181,9 @@ export function Overview() {
               <div className="mt-3 space-y-2">
                 {(
                   [
-                    ['Subject', '#f04438'],
-                    ['Cannot determine', '#fbbf24'],
-                    ['Not subject', '#34d399'],
+                    ['Subject', DETERMINATION_COLOR.Subject],
+                    ['Cannot determine', DETERMINATION_COLOR['Cannot determine']],
+                    ['Not subject', DETERMINATION_COLOR['Not subject']],
                   ] as [keyof typeof detCount, string][]
                 ).map(([k, color]) => (
                   <div key={k} className="flex items-center gap-2.5">
@@ -307,14 +309,7 @@ export function Overview() {
                       <td className="px-4 py-[9px] text-right">
                         <span
                           className="text-[10.5px]"
-                          style={{
-                            color:
-                              d.state === 'Subject'
-                                ? '#f04438'
-                                : d.state === 'Not subject'
-                                  ? '#34d399'
-                                  : '#fbbf24',
-                          }}
+                          style={{ color: DETERMINATION_COLOR[d.state] }}
                         >
                           {d.state}
                         </span>
@@ -334,8 +329,10 @@ export function Overview() {
             30 m Copernicus DEM · {portfolio.totals.facilities} real footprints · ERA5 heat
           </span>
           <span className="ml-auto flex items-center gap-2 text-[11px] text-ink-4">
-            Validated against 20 districts flooded in April 2024
-            <DotStrip values={[62, 71, 55, 82, 44, 90, 38, 66, 73, 58]} height={12} />
+            Validated against {model?.validation.n_sites ?? 20} districts flooded in April 2024
+            {model && (
+              <DotStrip values={model.validation.sites.map((x) => x.flood)} height={12} />
+            )}
           </span>
         </div>
       </div>

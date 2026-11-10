@@ -10,6 +10,7 @@ import {
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { cn } from '@/lib/utils'
 import { BAND_COLOR, band, ramp } from '@/lib/format'
+import { loadModel } from '@/lib/model'
 import type { Scenario } from '@/lib/types'
 
 export interface MapFacility {
@@ -78,15 +79,23 @@ export function MapCanvas({
   const [ready, setReady] = useState(false)
   const [pitch3d, setPitch3d] = useState(false)
   const [sample, setSample] = useState<{ flood: number; heat: number } | null>(null)
+  const [sampling, setSampling] = useState(false)
   const pin = useRef<Marker | null>(null)
 
   // Latest props, readable from handlers registered once on load.
   const live = useRef({ overlay, scenario, onPickCustomer, facilities })
   live.current = { overlay, scenario, onPickCustomer, facilities }
 
-  const grid = useRef<{ meta: GridMeta; flood: number[]; heat: number[]; w: number; h: number } | null>(
-    null,
-  )
+  // Grids are per scenario; the cache key keeps a stale surface from being read
+  // after the scenario selector moves.
+  const grid = useRef<{
+    key: string
+    meta: GridMeta
+    flood: number[]
+    heat: number[]
+    w: number
+    h: number
+  } | null>(null)
 
   // ---- one-time init -------------------------------------------------
   useEffect(() => {
@@ -117,9 +126,10 @@ export function MapCanvas({
       m.addImage(id, { width: 1, height: 1, data: new Uint8Array([0, 0, 0, 0]) })
     })
 
-    const addLayers = () => {
+    const addLayers = async () => {
+      const model = await loadModel()
       const firstSymbol = m.getStyle().layers?.find((l) => l.type === 'symbol')?.id
-      const b = gridBounds({ x0: 5348, y0: 3498, z: 13, width: 3072, height: 3328 })
+      const b = gridBounds(model.grid)
 
       m.addSource('hazard', {
         type: 'image',
@@ -240,7 +250,7 @@ export function MapCanvas({
         e.preventDefault()
         const p = f.properties as Record<string, string | number>
         const s = Number(p.score)
-        new Popup({ offset: 13, closeButton: false, maxWidth: '270px' })
+        const popup = new Popup({ offset: 13, closeButton: false, maxWidth: '270px' })
           .setLngLat((f.geometry as { coordinates: [number, number] }).coordinates)
           .setHTML(
             `<div style="padding:11px 13px;font-family:Inter,system-ui,sans-serif">
@@ -253,10 +263,14 @@ export function MapCanvas({
                  <div><div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#5b616b">1-in-100 depth</div>
                    <div style="font-family:'JetBrains Mono',monospace;font-size:16px;color:#eceef1">${Number(p.depth100M).toFixed(2)}<span style="font-size:10px;color:#737b87"> m</span></div></div>
                </div>
+               <button data-open style="margin-top:10px;width:100%;padding:6px 0;background:rgba(124,156,255,0.12);border:1px solid rgba(124,156,255,0.28);border-radius:6px;color:#9db4ff;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit">Open borrower</button>
              </div>`,
           )
           .addTo(m)
-        live.current.onPickCustomer?.(String(p.customerId))
+        // Navigation happens from the popup, so the facility detail stays readable.
+        popup.getElement()?.querySelector('[data-open]')?.addEventListener('click', () => {
+          live.current.onPickCustomer?.(String(p.customerId))
+        })
       })
 
       m.on('mouseenter', 'fac-dot', () => {
@@ -269,16 +283,20 @@ export function MapCanvas({
       // Bare-map click: sample the hazard field at that point.
       m.on('click', async (e) => {
         if (m.queryRenderedFeatures(e.point, { layers: ['fac-dot'] }).length) return
-        if (!grid.current) {
+        const key = live.current.scenario
+        if (!grid.current || grid.current.key !== key) {
+          setSampling(true)
           try {
             const [model, fl, ht] = await Promise.all([
-              fetch('/geo/model.json').then((r) => r.json()),
-              fetch('/geo/grid_flood.json').then((r) => r.json()),
-              fetch('/geo/grid_heat.json').then((r) => r.json()),
+              loadModel(),
+              fetch(`/geo/grid_flood_${key}.json`).then((r) => r.json()),
+              fetch(`/geo/grid_heat_${key}.json`).then((r) => r.json()),
             ])
-            grid.current = { meta: model.grid, flood: fl.v, heat: ht.v, w: fl.w, h: fl.h }
+            grid.current = { key, meta: model.grid, flood: fl.v, heat: ht.v, w: fl.w, h: fl.h }
           } catch {
             return
+          } finally {
+            setSampling(false)
           }
         }
         const g = grid.current
@@ -302,8 +320,11 @@ export function MapCanvas({
       setReady(true)
     }
 
-    if (m.isStyleLoaded()) addLayers()
-    else m.once('style.load', addLayers)
+    const attach = () => {
+      addLayers().catch((e: unknown) => console.error('Elevation: map layers failed to attach', e))
+    }
+    if (m.isStyleLoaded()) attach()
+    else m.once('style.load', attach)
 
     return () => {
       ro.disconnect()
@@ -315,6 +336,14 @@ export function MapCanvas({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // A point sample belongs to the scenario it was taken in, so drop it when the
+  // scenario moves rather than leaving a stale reading on screen.
+  useEffect(() => {
+    setSample(null)
+    pin.current?.remove()
+    pin.current = null
+  }, [scenario])
 
   // ---- hazard overlay swap -------------------------------------------
   useEffect(() => {
@@ -408,7 +437,7 @@ export function MapCanvas({
             {pitch3d ? '3D on' : '3D'}
           </button>
           <div className="rounded-md border border-line-2 bg-canvas/85 px-2.5 py-1.5 text-[11px] text-ink-3 backdrop-blur-md">
-            Click to sample
+            {sampling ? 'Sampling…' : 'Click to sample'}
           </div>
         </div>
       )}
@@ -438,7 +467,7 @@ export function MapCanvas({
             <SampleRow label="Heat" value={sample.heat} />
           </div>
           <p className="mt-2.5 border-t border-line pt-2 text-[10.5px] leading-snug text-ink-4">
-            Susceptibility index, 30 m terrain screen.
+            Susceptibility index, 30 m terrain screen · {scenario === 'now' ? 'baseline' : scenario}
           </p>
         </div>
       )}

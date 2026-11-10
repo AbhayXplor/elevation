@@ -1,15 +1,11 @@
 import { Download, FileJson } from 'lucide-react'
 import { portfolio } from '@/lib/portfolio'
 import { useStore } from '@/lib/store'
-import { aed, determine, download, money, pct, toCsv } from '@/lib/format'
+import { aed, customerHeat, DETERMINATION_COLOR, determine, download, money, pct, toCsv } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Label, Meter, Panel, PanelHeader } from '@/components/ui/primitives'
 
-const STATE_COLOR: Record<string, string> = {
-  Subject: '#f04438',
-  'Cannot determine': '#fbbf24',
-  'Not subject': '#34d399',
-}
+const STATE_COLOR = DETERMINATION_COLOR
 
 const RUN_DATE = new Date().toISOString().slice(0, 10)
 
@@ -73,7 +69,7 @@ export function Report() {
             exposure: c.exposure,
             determination: d.state,
             basis: d.reason,
-            hazards: { pluvial: c.scenarios[scenario].floodScore, heat: c.heatScore },
+            hazards: { pluvial: c.scenarios[scenario].floodScore, heat: customerHeat(c, scenario) },
             financial: {
               loss100: c.scenarios[scenario].loss100,
               haircut: c.scenarios[scenario].haircut,
@@ -105,9 +101,11 @@ export function Report() {
               CRFR2 disclosure
             </h2>
             <p className="mt-1 max-w-[660px] text-[12.5px] leading-relaxed text-ink-3">
-              BCBS asks institutions to classify every exposure as subject, not subject or — where
-              evidence is genuinely missing — cannot determine, and to disclose whether the source
-              was internal, vendor or modelled. This is that table.
+              Template CRFR2 of the BCBS voluntary disclosure framework separates exposures that are
+              subject to physical risk from those that are not, and records the basis for each. Where
+              the evidence is genuinely missing we report{' '}
+              <span style={{ color: DETERMINATION_COLOR['Cannot determine'] }}>cannot determine</span>{' '}
+              rather than force a binary. This is that table.
             </p>
           </div>
           <div className="flex gap-2">
@@ -231,11 +229,13 @@ export function Report() {
               </p>
               <p>
                 Collateral values are adjusted by a haircut equal to the impairment expected in the
-                1-in-100-year event, capped at 30%, consistent with{' '}
+                1-in-100-year event, capped at 30%. That devaluation is reported as a transmission
+                channel from physical to financial risk under{' '}
+                <span className="mono text-ink-2">§4.7.5</span>, and its funding-side effect —
+                higher haircuts in a less liquid market — under{' '}
                 <span className="mono text-ink-2">§4.10.2</span>. Post-haircut LTV feeds the
                 provisioning and capital assessment under{' '}
-                <span className="mono text-ink-2">§4.11.6</span> and the ICAAP/ORSA narrative in{' '}
-                <span className="mono text-ink-2">Article 5</span>.
+                <span className="mono text-ink-2">§4.11.6</span> alongside the ICAAP/ORSA narrative.
               </p>
               <p>
                 Where facility-level evidence is missing or the modelled depth lands in the

@@ -8,6 +8,7 @@ hazard.py so the validation number stays honest (no per-asset fitting).
 from __future__ import annotations
 
 import itertools
+import json
 import sys
 from pathlib import Path
 
@@ -48,7 +49,18 @@ urban = (dens_full > 0.08) & land
 pts = []
 for lon, lat, name in APRIL_2024_SITES:
     px, py = proj(lon, lat)
-    pts.append((name, int(py), int(px)))
+    iy, ix = int(py), int(px)
+    # Match hazard.py: a district centroid can fall on water, so snap to the
+    # nearest land cell instead of scoring NaN and silently counting a miss.
+    if not land[iy, ix]:
+        ys, xs = np.mgrid[max(0, iy - 20) : iy + 21, max(0, ix - 20) : ix + 21]
+        m = land[ys, xs]
+        if m.any():
+            d = (ys - iy) ** 2 + (xs - ix) ** 2
+            d[~m] = 10**9
+            j = np.unravel_index(np.argmin(d), d.shape)
+            iy, ix = int(ys[j]), int(xs[j])
+    pts.append((name, iy, ix))
 
 
 def build(ps, bs, flat_s, low_s, w):
@@ -98,6 +110,28 @@ if __name__ == "__main__":
     print("top 8 configurations (capture, median percentile rank):")
     for cap, medrank, cfg, _, _ in results[:8]:
         print(f"  cap={cap:.2f} medrank={medrank:.3f}  pond/{cfg[0]} basin/{cfg[1]} flat/{cfg[2]} low/{cfg[3]} w={cfg[4]}")
+
+    # The sweep is scored on the same 20 districts the model is later validated
+    # against, so the winning capture rate is an in-sample figure. Publishing the
+    # spread across all configurations keeps that visible instead of quoting the
+    # best result as if it came from a held-out set.
+    caps = np.array([r[0] for r in results], dtype=float)
+    medranks = np.array([r[1] for r in results], dtype=float)
+    best = float(caps.max())
+    tuning = {
+        "configurations": int(len(results)),
+        "capture_best": round(best, 3),
+        "capture_median": round(float(np.median(caps)), 3),
+        "capture_p90": round(float(np.percentile(caps, 90)), 3),
+        "capture_worst": round(float(caps.min()), 3),
+        "capture_share_at_best": round(float((caps >= best).mean()), 3),
+        "medrank_best": round(float(medranks.max()), 3),
+        "medrank_median": round(float(np.median(medranks)), 3),
+        "fitted_on": "same 20 districts as validation (in-sample)",
+    }
+    (DATA / "tuning.json").write_text(json.dumps(tuning, indent=2))
+    print()
+    print(json.dumps(tuning, indent=2))
 
     cap, medrank, cfg, s, site = results[0]
     print()

@@ -20,7 +20,7 @@ const NAV: { id: ViewId; label: string; icon: typeof LayoutDashboard; hint: stri
 ]
 
 export function Sidebar() {
-  const { view, setView } = useStore()
+  const { view, setView, setSelectedCustomer } = useStore()
 
   return (
     <aside className="flex w-[222px] shrink-0 flex-col border-r border-line bg-surface">
@@ -41,7 +41,12 @@ export function Sidebar() {
           return (
             <button
               key={item.id}
-              onClick={() => setView(item.id)}
+              onClick={() => {
+                // Navigating from the sidebar returns to the list, not the last
+                // borrower that happened to be open.
+                setSelectedCustomer(null)
+                setView(item.id)
+              }}
               className={cn(
                 'group relative flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-left transition-colors duration-150',
                 active ? 'bg-surface-3 text-ink' : 'text-ink-2 hover:bg-white/[0.035] hover:text-ink',

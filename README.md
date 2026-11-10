@@ -24,9 +24,10 @@ Banks know this in aggregate but not in detail. Property-level catastrophe model
 figures a year and are built for insurers, not lenders. So physical risk gets handled as a
 qualitative line in a policy document, disconnected from the actual collateral schedule.
 
-CBUAE's *Climate Risk Financial Reporting* standard (C 8/2025) removes that option. Banks
-have to identify, measure and disclose physical risk at exposure level. Elevation is a
-working answer to what that looks like when you build it from data you can actually get.
+CBUAE's *Climate-related Financial Risk Management Regulation* (C 8/2025) removes that
+option. Banks have to identify, measure and disclose physical risk at exposure level.
+Elevation is a working answer to what that looks like when you build it from data you can
+actually get.
 
 ---
 
@@ -110,9 +111,6 @@ island component.
 
 ## Validation
 
-The model was not tuned until it looked good. It was tuned against an event that actually
-happened, then frozen.
-
 The test: 20 districts that reported flooding in April 2024. If the screen is informative,
 they should cluster in the top quartile of built-up Dubai.
 
@@ -124,8 +122,25 @@ they should cluster in the top quartile of built-up Dubai.
 | Top-quartile threshold | 54.8 |
 | P90 threshold | 66.7 |
 
-Scales and weights were set by `pipeline/tune.py` on the built-up area only, then locked.
-The numbers above are what came out afterwards.
+### The honest caveat
+
+Those weights were selected by sweeping **180 configurations** against the same 20
+districts, so 12/20 is an **in-sample** figure, not a held-out one. Quoting it alone would
+overstate what has been demonstrated.
+
+So the sweep publishes its whole distribution, not just the winner:
+
+| | Configurations |
+|---|---|
+| Best | 12 of 20 |
+| 90th percentile | 12 of 20 |
+| Median | 11 of 20 |
+| Worst | 9 of 20 |
+
+Every one of the 180 configurations beats the 5-of-20 chance baseline, and 17% reach the
+top result. The model is not a single lucky parameter set — but it is still fitted on the
+same districts it is scored against. A held-out set of districts, and a comparison against
+an independent hazard model, is the next step (see [Roadmap](#roadmap-90-days)).
 
 ---
 
@@ -170,14 +185,22 @@ prices a ten-year facility in Business Bay.
 Each determination is mapped to the clauses it draws on, so the output is an evidence record
 rather than a dashboard:
 
-| Clause | Requirement | What Elevation produces |
+| Clause | What the regulation requires | What Elevation produces |
 |---|---|---|
-| §4.7.2 | Customer and portfolio level | Exposure and 1-in-100 loss per borrower, and the same aggregated across the book |
-| §4.7.4 | Customer's exposure to climate risk | Modelled pluvial score and worst ponding depth at each facility |
-| §4.7.5 | Transmission channels | Collateral haircut and revenue at risk, by sector |
-| §4.7.11 | Geographical risk concentrations | Facilities and districts per borrower, with correlated hazard |
-| §4.10.2 | Collateral haircuts | Haircut applied to collateral before it enters the LTV |
-| §4.11.6 | Provisions, capital and liquidity | Expected annual loss against the margin the relationship earns |
+| §4.7.2 | Integration at customer and portfolio level, across the relationship lifecycle | Exposure and 1-in-100 loss per borrower, and the same aggregated across the book |
+| §4.7.4 | Magnitude of the customer's exposure to physical risk, and their mitigation record | Modelled pluvial score and worst ponding depth at each facility |
+| §4.7.5 | Transmission channels from physical risk to financial risk | Collateral devaluation, and the LTV move it causes |
+| §4.7.11 | Physical-risk metrics for geographic concentrations of assets and collateral | Facilities and districts per borrower, with correlated hazard |
+| §4.10.2 | Liquidity-risk impact, including higher collateral haircuts in a less liquid market | The funding-side effect of the same haircut |
+| §4.11.6 | Scenario-analysis outcomes for provisions, capital and liquidity against baseline | Expected annual loss against the margin the relationship earns |
+
+Two clarifications, because precision here matters more than sounding impressive:
+
+- The regulation is CBUAE's **Climate-related Financial Risk Management Regulation**, not a
+  reporting standard. The disclosure duty sits inside it.
+- **CRFR2** is a template label in the BCBS *voluntary* disclosure framework — *physical
+  risk, exposures subject to physical risks* — not a mandatory BCBS document. The app labels
+  its table CRFR2 because that is the template it mirrors.
 
 Both exports are real files: a CSV of all 27 exposures and a JSON audit trail with the model
 provenance attached.
@@ -205,8 +228,13 @@ so the only network dependency is tile fetching.
 ### Rebuilding the model
 
 The generated artifacts are committed, so the app runs without Python. To regenerate them
-you need Python 3.11+ with `numpy`, `scipy`, `rasterio`, `shapely`, `pillow`, `duckdb` and
-`overturemaps`.
+you need Python 3.11+.
+
+```bash
+python -m venv .venv
+.venv/Scripts/activate        # .venv/bin/activate on macOS/Linux
+pip install -r pipeline/requirements.txt
+```
 
 ```bash
 cd pipeline
@@ -218,6 +246,10 @@ python tune.py          # sweep scales/weights against April 2024
 python hazard.py        # build the score grids and overlays
 python portfolio.py     # run the financial engine
 ```
+
+Order matters: `tune.py` writes `data/tuning.json`, and `hazard.py` copies that distribution
+into `model.json` so the app can disclose it. Copy `data/model.json`, the six
+`data/grid_*.json` files and the six overlay PNGs into `public/geo/` afterwards.
 
 Intermediate rasters (`data/`) are git-ignored. They are roughly 200 MB and rebuild cleanly.
 
@@ -260,8 +292,17 @@ Stated plainly, because they matter more than the demo does.
 - **The borrower book is synthetic.** The 27 borrowers, exposures and collateral values are
   constructed to resemble a mid-size UAE corporate book. The geography, hazard scores and
   loss outputs are computed, not scripted.
-- **Damage curves are Hazus-derived**, which is a US calibration. UAE-specific curves would
-  shift the loss numbers, though not the ranking.
+- **The damage curves are Hazus-*style*** — hand-specified from FEMA's published methodology
+  rather than loaded from the Hazus software. They are a US calibration, and UAE-specific
+  curves would move the loss numbers, though not the ranking.
+- **Validation is in-sample.** The weights were chosen on the same 20 districts they are
+  scored against. The sweep publishes its whole distribution for that reason, but a held-out
+  set is what would make the number defensible.
+- **The April 2024 anchors are 20 single points** — one pixel per district, snapped to land.
+  The validation asks whether the *district* ranks highly, not whether that specific pixel
+  flooded.
+- **Depth is a lookup, not a measurement.** Depth is mapped from the susceptibility index
+  through a monotone anchor, so it is a screening depth, never a surveyed one.
 - **Heat affects the asset, not yet the borrower.** The heat layer is modelled and mapped but
   only enters the financial engine through a separate score, not through revenue or
   business-interruption effects.
@@ -291,6 +332,40 @@ the working prototype behind both.
 | Presentation, clarity and creativity | 25% | The five screens above |
 
 Weights as published on hackathon.ae for the Pioneers track.
+
+---
+
+## Roadmap (90 days)
+
+The brief asks for an execution plan, so this is the one we would run with a pilot bank.
+
+| Days | Workstream | Milestone |
+|---|---|---|
+| 1–15 | Data intake | A pilot extract of ~1,000 corporate facilities replaces the synthetic book; facilities geocoded against municipal records and collateral values reconciled |
+| 16–30 | Hazard validation | The screen cross-checked against JRC GloFAS river-flood depths and one SFINCS hydraulic run on a district that flooded in April 2024; agreement and disagreement both documented |
+| 31–45 | Vulnerability | Hand-calibrated curves replaced with the published JRC global depth-damage functions; sensitivity run at ±25% depth |
+| 46–60 | Model risk | Independent review, backtest against the bank's actual April 2024 claims, limitations signed off by the model risk function |
+| 61–75 | Workflow | The CRFR2 export wired into the credit memo and the annual ICAAP pack; piloted with two relationship managers |
+| 76–90 | Decision | Go/no-go on licensed hazard data; production refresh cadence and service level agreed |
+
+The gate is day 30. If the open screen does not agree with an independent hazard model on
+real distressed districts, the product stops being a hazard model and becomes a disclosure
+workflow on top of licensed data — which is still a business, but a different one.
+
+---
+
+## Commercial model
+
+| Block | Position |
+|---|---|
+| Customer segments | UAE banks and Islamic banks with corporate and commercial real-estate books; later insurers and regulators as a reference layer |
+| Value proposition | CRFR2-grade, facility-level evidence at a fraction of a catastrophe model, with the audit trail attached |
+| Channels | Direct to the CRO and model risk function; hackathon to pilot to annual subscription |
+| Revenue | Annual subscription scaled to book size, plus per-assessment fees for stress-test cycles |
+| Key activities | Hazard validation, disclosure generation, keeping pace with regulatory change |
+| Key partners | Licensed hazard vendors (JBA, Climate X) as the upgrade path; municipal and land-department data |
+| Cost structure | Model validation, data licensing, and a small engineering team — no hydraulic modelling staff |
+| Competitive position | Sits *under* catastrophe models rather than competing with them: banks that cannot justify six figures a year can still produce defensible disclosure |
 
 Built during the Dubai leg of UAE Hackathon 2026. The model is open to scrutiny: the
 validation is reproducible from `pipeline/tune.py`, and the failure modes are documented on

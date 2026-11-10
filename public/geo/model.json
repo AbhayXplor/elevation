@@ -180,7 +180,18 @@
     "captured_in_top_quartile": 12,
     "capture_rate": 0.6,
     "median_percentile_rank": 0.806,
-    "expected_by_chance": 5.0
+    "expected_by_chance": 5.0,
+    "tuning": {
+      "configurations": 180,
+      "capture_best": 0.6,
+      "capture_median": 0.55,
+      "capture_p90": 0.6,
+      "capture_worst": 0.45,
+      "capture_share_at_best": 0.172,
+      "medrank_best": 0.814,
+      "medrank_median": 0.773,
+      "fitted_on": "same 20 districts as validation (in-sample)"
+    }
   },
   "grid": {
     "x0": 5348,

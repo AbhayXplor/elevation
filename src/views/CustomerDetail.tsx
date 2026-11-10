@@ -1,8 +1,20 @@
+import { useMemo } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { MapCanvas, type MapFacility } from '@/components/MapCanvas'
 import { portfolio } from '@/lib/portfolio'
 import { useStore } from '@/lib/store'
-import { aed, band, BAND_COLOR, determine, download, money, num, pct } from '@/lib/format'
+import {
+  aed,
+  band,
+  BAND_COLOR,
+  customerHeat,
+  DETERMINATION_COLOR,
+  determine,
+  download,
+  money,
+  num,
+  pct,
+} from '@/lib/format'
 import { Kpi } from '@/components/Kpi'
 import { Button } from '@/components/ui/button'
 import { Label, Meter, Panel, PanelHeader, RiskPill } from '@/components/ui/primitives'
@@ -17,32 +29,35 @@ const CLAUSES: { ref: string; title: string; body: string; pick: (c: Customer, s
   },
   {
     ref: '4.7.4',
-    title: "Customer's exposure to climate risk",
-    body: 'The modelled physical hazard reaching this borrower’s assets.',
+    title: "Customer's exposure to physical risk",
+    body: 'The magnitude of the modelled physical hazard reaching this borrower’s assets.',
     pick: (c, s) => `Pluvial score ${c.scenarios[s].floodScore.toFixed(0)} · depth ${c.scenarios[s].worstDepth.toFixed(2)} m`,
   },
   {
     ref: '4.7.5',
     title: 'Transmission channels',
-    body: 'How the hazard reaches the balance sheet: collateral devaluation and interruption of revenue.',
-    pick: (c, s) => `Collateral channel ${pct(c.scenarios[s].haircut)} · ${c.sector.toLowerCase()} revenue at risk`,
+    body: 'How physical risk becomes financial risk: collateral devaluation and interruption of revenue.',
+    pick: (c, s) => `Collateral devaluation ${pct(c.scenarios[s].haircut)} · LTV ${pct(c.ltv, 0)} → ${pct(c.scenarios[s].ltvAfter, 0)}`,
   },
   {
     ref: '4.7.11',
     title: 'Geographical risk concentrations',
-    body: 'Concentration of secured value in districts with correlated hazard.',
-    pick: (c) => `${c.facilities.length} sites across ${new Set(c.facilities.map((f) => f.district)).size} districts`,
+    body: 'Physical-risk metrics and indicators for concentrations across assets and collateral held.',
+    pick: (c) => {
+      const n = new Set(c.facilities.map((f) => f.district)).size
+      return `${c.facilities.length} site${c.facilities.length === 1 ? '' : 's'} across ${n} district${n === 1 ? '' : 's'}`
+    },
   },
   {
     ref: '4.10.2',
-    title: 'Collateral haircuts',
-    body: 'Valuation adjusted for physical risk before it is used in the LTV calculation.',
-    pick: (c, s) => `Haircut ${pct(c.scenarios[s].haircut)} · LTV ${pct(c.ltv, 0)} → ${pct(c.scenarios[s].ltvAfter, 0)}`,
+    title: 'Liquidity-risk impact',
+    body: 'Where higher collateral haircuts and simultaneous drawdowns can tighten the funding position.',
+    pick: (c, s) => `Haircut ${pct(c.scenarios[s].haircut)} applied to AED ${money(c.collateralValue)} of collateral`,
   },
   {
     ref: '4.11.6',
-    title: 'Provisions, capital and liquidity',
-    body: 'Expected annual loss expressed against the margin the relationship earns.',
+    title: 'Scenario-analysis outcomes',
+    body: 'Impact of each adverse scenario on provisions, capital and liquidity against the baseline.',
     pick: (c, s) => `EAL AED ${money(c.scenarios[s].aal)} · ${pct(c.scenarios[s].aal / c.annualMargin)} of annual margin`,
   },
 ]
@@ -50,30 +65,50 @@ const CLAUSES: { ref: string; title: string; body: string; pick: (c: Customer, s
 export function CustomerDetail({ id }: { id: string }) {
   const { scenario, setSelectedCustomer } = useStore()
   const c = portfolio.customers.find((x) => x.id === id)
-  if (!c) return null
+
+  const facilities = useMemo<MapFacility[]>(() => {
+    if (!c) return []
+    return c.facilities.map((f) => ({
+      id: f.id,
+      customerId: c.id,
+      customerName: c.name,
+      name: f.name,
+      district: f.district,
+      lon: f.lon,
+      lat: f.lat,
+      floodScore: f.scenarios[scenario].score,
+      heatScore: f.heatScenarios[scenario] ?? f.heatScore,
+      depth100M: f.scenarios[scenario].depth,
+      heightM: f.heightM,
+      ring: f.ring,
+    }))
+  }, [c, scenario])
+
+  // Stable identity: a fresh array every render would re-centre the map.
+  const centre = useMemo<[number, number] | null>(() => {
+    if (!facilities.length) return null
+    return [
+      facilities.reduce((s, f) => s + f.lon, 0) / facilities.length,
+      facilities.reduce((s, f) => s + f.lat, 0) / facilities.length,
+    ]
+  }, [facilities])
+
+  if (!c) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-2">
+        <p className="text-[12.5px] text-ink-2">That borrower is no longer in the book.</p>
+        <button
+          onClick={() => setSelectedCustomer(null)}
+          className="text-[11.5px] text-accent transition-opacity hover:opacity-80"
+        >
+          Back to the register
+        </button>
+      </div>
+    )
+  }
 
   const sc = c.scenarios[scenario]
   const det = determine(c, scenario)
-
-  const facilities: MapFacility[] = c.facilities.map((f) => ({
-    id: f.id,
-    customerId: c.id,
-    customerName: c.name,
-    name: f.name,
-    district: f.district,
-    lon: f.lon,
-    lat: f.lat,
-    floodScore: f.scenarios[scenario].score,
-    heatScore: f.heatScenarios[scenario] ?? f.heatScore,
-    depth100M: f.scenarios[scenario].depth,
-    heightM: f.heightM,
-    ring: f.ring,
-  }))
-
-  const centre: [number, number] = [
-    facilities.reduce((s, f) => s + f.lon, 0) / facilities.length,
-    facilities.reduce((s, f) => s + f.lat, 0) / facilities.length,
-  ]
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -101,24 +136,9 @@ export function CustomerDetail({ id }: { id: string }) {
             <span
               className="rounded-md border px-2.5 py-1 text-[11px] font-medium"
               style={{
-                color:
-                  det.state === 'Subject'
-                    ? '#f04438'
-                    : det.state === 'Not subject'
-                      ? '#34d399'
-                      : '#fbbf24',
-                borderColor:
-                  det.state === 'Subject'
-                    ? '#f0443840'
-                    : det.state === 'Not subject'
-                      ? '#34d39940'
-                      : '#fbbf2440',
-                background:
-                  det.state === 'Subject'
-                    ? '#f0443812'
-                    : det.state === 'Not subject'
-                      ? '#34d39912'
-                      : '#fbbf2412',
+                color: DETERMINATION_COLOR[det.state],
+                borderColor: `${DETERMINATION_COLOR[det.state]}40`,
+                background: `${DETERMINATION_COLOR[det.state]}12`,
               }}
             >
               CRFR2 · {det.state}
@@ -151,7 +171,7 @@ export function CustomerDetail({ id }: { id: string }) {
                     expectedAnnualLossAed: sc.aal,
                     worstDepthM: Number(sc.worstDepth.toFixed(3)),
                     pluvialScore: Number(sc.floodScore.toFixed(1)),
-                    heatScore: Number((c.heatScore ?? 0).toFixed(1)),
+                    heatScore: Number(customerHeat(c, scenario).toFixed(1)),
                     collateralHaircut: sc.haircut,
                     ltvAfter: sc.ltvAfter,
                   },
@@ -209,7 +229,7 @@ export function CustomerDetail({ id }: { id: string }) {
             value={money(sc.loss100)}
             unit="AED"
             tone="danger"
-            sub={`${pct(sc.damage100)} of secured asset value`}
+            sub={`${pct(sc.damage100)} of the AED ${money(c.assetValue)} insured asset value`}
             bar={<Meter value={sc.damage100} max={0.3} color="#f04438" height={3} />}
           />
           <Kpi

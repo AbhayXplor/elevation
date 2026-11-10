@@ -75,6 +75,18 @@ export function ramp(score: number): string {
   return 'rgb(240, 68, 56)'
 }
 
+export const DETERMINATION_COLOR: Record<string, string> = {
+  Subject: BAND_COLOR.severe,
+  'Cannot determine': BAND_COLOR.moderate,
+  'Not subject': BAND_COLOR.low,
+}
+
+/** Highest modelled heat score across a borrower's facilities for one scenario. */
+export function customerHeat(c: Customer, s: Scenario): number {
+  if (!c.facilities.length) return c.heatScore ?? 0
+  return Math.max(...c.facilities.map((f) => f.heatScenarios?.[s] ?? f.heatScore))
+}
+
 export type Determination = 'Subject' | 'Not subject' | 'Cannot determine'
 
 export interface DeterminationResult {

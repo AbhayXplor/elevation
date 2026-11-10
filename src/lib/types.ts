@@ -115,6 +115,17 @@ export interface ModelDoc {
     capture_rate: number
     median_percentile_rank: number
     expected_by_chance: number
+    tuning?: {
+      configurations: number
+      capture_best: number
+      capture_median: number
+      capture_p90: number
+      capture_worst: number
+      capture_share_at_best: number
+      medrank_best: number
+      medrank_median: number
+      fitted_on: string
+    }
   }
   grid: { x0: number; y0: number; z: number; width: number; height: number; meters_per_px: number }
 }

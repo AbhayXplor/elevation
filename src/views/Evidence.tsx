@@ -1,34 +1,39 @@
-import { useEffect, useState } from 'react'
 import { portfolio } from '@/lib/portfolio'
 import { band, BAND_COLOR, pct } from '@/lib/format'
+import { useModel } from '@/lib/model'
 import { Label, Meter, Panel, PanelHeader } from '@/components/ui/primitives'
-import type { ModelDoc } from '@/lib/types'
 
 const SOURCES = [
   ['Copernicus DEM GLO-30', 'Terrain', 'European Space Agency · free and open', '30 m DSM'],
   ['Overture Buildings', 'Footprints', 'CDLA-Permissive-2.0 · ODbL', '470,294 buildings'],
   ['ERA5 via Open-Meteo', 'Heat baseline', 'Copernicus / CC BY 4.0', '2015–2024 daily'],
   ['OpenFreeMap', 'Basemap', 'MIT · OpenStreetMap ODbL', 'vector tiles'],
-  ['Hazus depth-damage', 'Vulnerability', 'FEMA methodology, public domain', '7 occupancy curves'],
+  ['Hazus-style depth-damage', 'Vulnerability', 'FEMA methodology, hand-calibrated', '7 occupancy curves'],
 ]
 
 const LIMITS = [
   'Screening-level: a terrain susceptibility surface, not a 2-D hydraulic flood model. There is no drainage-network routing and no rainfall–runoff hydrograph.',
   'A 30 m DEM resolves the ground, not the pipes. Dubai’s April 2024 flooding was driven as much by drainage capacity as by terrain, so depth is calibrated to observed ponding rather than simulated.',
-  'Depth is mapped from the susceptibility index through a monotone lookup anchored on April 2024 observations (0.2–1.5 m). It is a screening depth, not a surveyed one.',
+  'Depth is mapped from the susceptibility index through a monotone lookup anchored on April 2024 observations (0.2–2.0 m). It is a screening depth, not a surveyed one.',
   'Heat is a regional ERA5 projection modulated by built-up density. It is not a building-scale microclimate model.',
   'Exposure, valuation and margins are illustrative. The engine runs unchanged against a real loan book.',
 ]
 
 export function Evidence() {
-  const [model, setModel] = useState<ModelDoc | null>(null)
+  const { model, error } = useModel()
 
-  useEffect(() => {
-    fetch('/geo/model.json')
-      .then((r) => r.json())
-      .then(setModel)
-      .catch(() => {})
-  }, [])
+  if (error) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
+        <p className="text-[12.5px] font-medium text-ink">The model record could not be loaded</p>
+        <p className="mono max-w-[420px] text-[11px] text-ink-3">{error}</p>
+        <p className="text-[11px] text-ink-4">
+          Expected at <span className="mono">/geo/model.json</span> — check the pipeline output was
+          copied into <span className="mono">public/geo</span>.
+        </p>
+      </div>
+    )
+  }
 
   if (!model) {
     return (
@@ -106,6 +111,28 @@ export function Evidence() {
             </p>
           </Panel>
         </div>
+
+        {v.tuning && (
+          <Panel className="px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-risk-mod" />
+              <Label>Read this before quoting the number</Label>
+            </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">
+              The weights were selected by sweeping{' '}
+              <span className="mono text-ink-2">{v.tuning.configurations}</span> configurations
+              against these same 20 districts, so the headline agreement is an{' '}
+              <span className="text-ink-2">in-sample</span> figure. The winning configuration
+              captures{' '}
+              <span className="mono text-ink-2">{Math.round(v.tuning.capture_best * 20)}/20</span>;
+              the median configuration captures{' '}
+              <span className="mono text-ink-2">{Math.round(v.tuning.capture_median * 20)}/20</span>{' '}
+              and the weakest{' '}
+              <span className="mono text-ink-2">{Math.round(v.tuning.capture_worst * 20)}/20</span>. A
+              held-out set of districts is the next validation step.
+            </p>
+          </Panel>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           {/* flood model */}

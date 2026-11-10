@@ -152,8 +152,12 @@ def main() -> None:
     for name, field in heat_fields.items():
         write_overlay(field, DATA / f"heat_{name}.png", "heat")
 
-    write_grid(flood, DATA / "grid_flood.json")
-    write_grid(heat_fields["now"], DATA / "grid_heat.json")
+    # One grid per scenario: the client samples the same scenario the rest of the
+    # UI is showing, rather than always reporting the baseline.
+    for name, mult in SCENARIOS.items():
+        write_grid(np.clip(flood * mult, 0, 100), DATA / f"grid_flood_{name}.json")
+    for name, field in heat_fields.items():
+        write_grid(field, DATA / f"grid_heat_{name}.json")
 
     # Validation
     proj = make_projector(x0, y0, z)
@@ -191,6 +195,10 @@ def main() -> None:
         "median_percentile_rank": round(median_rank, 3),
         "expected_by_chance": round(len(sites) * 0.25, 1),
     }
+
+    tuning_path = DATA / "tuning.json"
+    if tuning_path.exists():
+        validation["tuning"] = json.loads(tuning_path.read_text())
 
     model = {
         "flood": {
