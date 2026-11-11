@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { MapCanvas, type MapFacility } from '@/components/MapCanvas'
 import { portfolio } from '@/lib/portfolio'
@@ -18,7 +18,8 @@ import {
 import { Kpi } from '@/components/Kpi'
 import { Button } from '@/components/ui/button'
 import { Label, Meter, Panel, PanelHeader, RiskPill } from '@/components/ui/primitives'
-import type { Customer } from '@/lib/types'
+import { explain, fallbackExplanation, type Explanation } from '@/lib/explain'
+import type { Customer, Scenario } from '@/lib/types'
 
 const CLAUSES: { ref: string; title: string; body: string; pick: (c: Customer, s: 'now' | '2030' | '2050') => string }[] = [
   {
@@ -250,6 +251,8 @@ export function CustomerDetail({ id }: { id: string }) {
           />
         </div>
 
+        <ExplainPanel c={c} scenario={scenario} />
+
         <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[1.5fr_1fr]">
           <Panel flush className="overflow-x-auto">
             <div className="px-4 pb-3 pt-4">
@@ -358,5 +361,43 @@ export function CustomerDetail({ id }: { id: string }) {
         </Panel>
       </div>
     </div>
+  )
+}
+
+/**
+ * Plain-English summary of this borrower. The deterministic text renders
+ * immediately, so the panel is never empty; the model version replaces it when
+ * the endpoint answers.
+ */
+function ExplainPanel({ c, scenario }: { c: Customer; scenario: Scenario }) {
+  const [ex, setEx] = useState<Explanation>(() => ({
+    text: fallbackExplanation(c, scenario),
+    source: 'fallback',
+  }))
+
+  useEffect(() => {
+    let alive = true
+    setEx({ text: fallbackExplanation(c, scenario), source: 'fallback' })
+    explain(c, scenario).then((e) => {
+      if (alive) setEx(e)
+    })
+    return () => {
+      alive = false
+    }
+  }, [c, scenario])
+
+  return (
+    <Panel className="mt-3 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          <Label>Why this borrower is flagged</Label>
+        </div>
+        <span className="rounded border border-line-2 px-1.5 py-0.5 text-[9.5px] text-ink-4">
+          {ex.source === 'model' ? 'Drafted by Gemini from the figures above' : 'Built from the figures above'}
+        </span>
+      </div>
+      <p className="mt-2 max-w-[860px] text-[12px] leading-relaxed text-ink-2">{ex.text}</p>
+    </Panel>
   )
 }

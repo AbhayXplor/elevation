@@ -442,8 +442,10 @@ export function MapCanvas({
         </div>
       )}
 
+      {/* Below the tool chips, not bottom-left: the portfolio summary card lives
+          there and was painting over this panel. */}
       {sample && (
-        <div className="absolute bottom-4 left-4 w-[214px] rounded-lg border border-line-2 bg-canvas/93 p-3 backdrop-blur-md">
+        <div className="absolute left-3 top-12 z-20 w-[214px] rounded-lg border border-line-2 bg-canvas/93 p-3 backdrop-blur-md">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-medium uppercase tracking-[0.09em] text-ink-3">
               Point sample

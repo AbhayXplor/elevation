@@ -31,3 +31,8 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Env: never commit real keys (.env.example is the template)
+.env
+.env.*
+!.env.example
