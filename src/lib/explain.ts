@@ -45,9 +45,11 @@ export function fallbackExplanation(c: Customer, s: Scenario): string {
     f.districts.length === 1
       ? f.districts[0]
       : `${f.districts[0]} and ${f.districts.length - 1} other district${f.districts.length > 2 ? 's' : ''}`
-  const site = f.worst_site.includes(f.worst_district)
-    ? f.worst_site
-    : `${f.worst_site} in ${f.worst_district}`
+  // Some site names carry the district after a separator, and a few are
+  // truncated to a stub, in which case the district is the better label.
+  const [head, tail] = f.worst_site.split('·').map((s) => s.trim())
+  const label = head && head.length >= 4 ? head : tail || head || f.worst_site
+  const site = label.includes(f.worst_district) ? label : `${label} in ${f.worst_district}`
 
   return (
     `${c.name} holds ${f.sites} site${f.sites === 1 ? '' : 's'} across ${where}, with the deepest modelled ponding at ${f.worst_depth} at ${site}. ` +
