@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowLeft, Link2 } from 'lucide-react'
 import { MapCanvas, type MapFacility } from '@/components/MapCanvas'
 import { portfolio } from '@/lib/portfolio'
 import { useStore } from '@/lib/store'
+import { cn } from '@/lib/utils'
 import {
   aed,
   band,
@@ -66,6 +67,10 @@ const CLAUSES: { ref: string; title: string; body: string; pick: (c: Customer, s
 export function CustomerDetail({ id }: { id: string }) {
   const { scenario, setSelectedCustomer } = useStore()
   const c = portfolio.customers.find((x) => x.id === id)
+
+  // The written assessment is part of the exported evidence, not just something
+  // on screen, so the panel publishes its result up.
+  const note = useRef<Explanation | null>(null)
 
   const facilities = useMemo<MapFacility[]>(() => {
     if (!c) return []
@@ -146,6 +151,7 @@ export function CustomerDetail({ id }: { id: string }) {
             >
               CRFR2 · {det.state}
             </span>
+            <CopyLink />
             <Button
               variant="secondary"
               size="sm"
@@ -194,6 +200,11 @@ export function CustomerDetail({ id }: { id: string }) {
                     title: k.title,
                     value: k.pick(c, scenario),
                   })),
+                  assessmentNote: {
+                    text: (note.current ?? { text: fallbackExplanation(c, scenario) }).text,
+                    source: note.current?.source ?? 'fallback',
+                    model: note.current?.model ?? null,
+                  },
                   provenance: {
                     terrain: 'Copernicus DEM GLO-30',
                     buildings: 'Overture Buildings',
@@ -251,7 +262,7 @@ export function CustomerDetail({ id }: { id: string }) {
           />
         </div>
 
-        <ExplainPanel c={c} scenario={scenario} />
+        <ExplainPanel c={c} scenario={scenario} onNote={(e) => (note.current = e)} />
 
         <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[1.5fr_1fr]">
           <Panel flush className="overflow-x-auto">
@@ -364,40 +375,99 @@ export function CustomerDetail({ id }: { id: string }) {
   )
 }
 
+/** Copies the current deep link, which already carries view, borrower and scenario. */
+function CopyLink() {
+  const [copied, setCopied] = useState(false)
+
+  return (
+    <button
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(window.location.href)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1600)
+        } catch {
+          // Clipboard access can be blocked; the URL bar still shows the link.
+        }
+      }}
+      title="Copy a link to this assessment"
+      className="flex items-center gap-1.5 rounded-md border border-line-2 bg-surface-2 px-2.5 py-1.5 text-[11px] text-ink-2 transition-colors hover:text-ink"
+    >
+      <Link2 size={12} />
+      {copied ? 'Copied' : 'Link'}
+    </button>
+  )
+}
+
 /**
  * Plain-English summary of this borrower. The deterministic text renders
  * immediately, so the panel is never empty; the model version replaces it when
  * the endpoint answers.
  */
-function ExplainPanel({ c, scenario }: { c: Customer; scenario: Scenario }) {
-  const [ex, setEx] = useState<Explanation>(() => ({
-    text: fallbackExplanation(c, scenario),
-    source: 'fallback',
-  }))
+function ExplainPanel({
+  c,
+  scenario,
+  onNote,
+}: {
+  c: Customer
+  scenario: Scenario
+  onNote?: (e: Explanation) => void
+}) {
+  // The result is tagged with the borrower+scenario it belongs to, so a slow
+  // answer for a previous borrower can never appear under this one.
+  const key = `${c.id}:${scenario}`
+  const [done, setDone] = useState<{ key: string; result: Explanation } | null>(null)
+
+  const noteCb = useRef(onNote)
+  useEffect(() => {
+    noteCb.current = onNote
+  }, [onNote])
 
   useEffect(() => {
     let alive = true
-    setEx({ text: fallbackExplanation(c, scenario), source: 'fallback' })
     explain(c, scenario).then((e) => {
-      if (alive) setEx(e)
+      if (!alive) return
+      setDone({ key, result: e })
+      noteCb.current?.(e)
     })
+
     return () => {
       alive = false
     }
-  }, [c, scenario])
+  }, [c, scenario, key])
+
+  const result = done?.key === key ? done.result : null
+  const text = result?.text ?? fallbackExplanation(c, scenario)
+  const state = !result ? 'drafting' : result.source === 'model' ? 'model' : 'template'
 
   return (
     <Panel className="mt-3 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-          <Label>Why this borrower is flagged</Label>
+          <span
+            className={cn(
+              'h-1.5 w-1.5 rounded-full',
+              state === 'drafting' ? 'animate-pulse bg-ink-4' : 'bg-accent',
+            )}
+          />
+          <Label>Credit note</Label>
         </div>
-        <span className="rounded border border-line-2 px-1.5 py-0.5 text-[9.5px] text-ink-4">
-          {ex.source === 'model' ? 'Drafted by Gemini from the figures above' : 'Built from the figures above'}
+        <span className="flex items-center gap-2 text-[9.5px] text-ink-4">
+          {state === 'drafting' && 'Drafting from the figures on this page…'}
+          {state === 'model' && (
+            <>
+              <span className="text-ink-3">Written by Gemini</span>
+              <span className="text-ink-4/60">· figures supplied, nothing generated</span>
+            </>
+          )}
+          {state === 'template' && 'Model unavailable — deterministic draft below'}
         </span>
       </div>
-      <p className="mt-2 max-w-[860px] text-[12px] leading-relaxed text-ink-2">{ex.text}</p>
+      <p className="mt-2 max-w-[880px] text-[12px] leading-relaxed text-ink-2">{text}</p>
+      <p className="mt-2 text-[10px] text-ink-4">
+        Included in the exported audit file. Every figure in this note is read from the model output
+        above.
+      </p>
     </Panel>
   )
 }

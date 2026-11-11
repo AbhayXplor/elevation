@@ -1,7 +1,7 @@
 import { customerHeat, money, pct } from './format'
 import type { Customer, Scenario } from './types'
 
-export type Explanation = { text: string; source: 'model' | 'fallback' }
+export type Explanation = { text: string; source: 'model' | 'fallback'; model?: string }
 
 function factsFor(c: Customer, s: Scenario) {
   const sc = c.scenarios[s]
@@ -20,9 +20,9 @@ function factsFor(c: Customer, s: Scenario) {
     collateral: `AED ${money(c.collateralValue)}`,
     sites: c.facilities.length,
     districts,
-    // Facility names often carry the district already; keep them separate so the
-    // sentence does not read "...in Business Bay in Business Bay".
-    worst_site: worst ? worst.name.split('·')[0].trim() : 'none recorded',
+    // Some facility names already end in their district; the sentence adds it
+    // only when it is missing, so it never reads "...in Business Bay in Business Bay".
+    worst_site: worst ? worst.name.trim() : 'none recorded',
     worst_district: worst ? worst.district : 'not recorded',
     worst_depth: worst ? `${worst.scenarios[s].depth.toFixed(2)} m` : 'not modelled',
     pluvial_score: Math.round(sc.floodScore),
@@ -45,9 +45,12 @@ export function fallbackExplanation(c: Customer, s: Scenario): string {
     f.districts.length === 1
       ? f.districts[0]
       : `${f.districts[0]} and ${f.districts.length - 1} other district${f.districts.length > 2 ? 's' : ''}`
+  const site = f.worst_site.includes(f.worst_district)
+    ? f.worst_site
+    : `${f.worst_site} in ${f.worst_district}`
 
   return (
-    `${c.name} holds ${f.sites} site${f.sites === 1 ? '' : 's'} across ${where}, with the deepest modelled ponding at ${f.worst_depth} at ${f.worst_site} in ${f.worst_district}. ` +
+    `${c.name} holds ${f.sites} site${f.sites === 1 ? '' : 's'} across ${where}, with the deepest modelled ponding at ${f.worst_depth} at ${site}. ` +
     `In a 1-in-100 pluvial event that impairs ${f.collateral_impairment} of the collateral and moves loan-to-value from ${f.ltv_before} to ${f.ltv_after}${f.ltv_limit_breached ? ', past the 90% limit' : ''}, for a loss of ${f.loss_1_in_100}. ` +
     `This supports ${f.clause}.`
   )
@@ -69,10 +72,14 @@ export async function explain(c: Customer, s: Scenario): Promise<Explanation> {
     })
     if (!res.ok) return fallback
 
-    const body = (await res.json()) as { text?: unknown }
+    const body = (await res.json()) as { text?: unknown; model?: unknown }
     if (typeof body.text !== 'string' || body.text.trim().length < 60) return fallback
 
-    return { text: body.text.trim(), source: 'model' }
+    return {
+      text: body.text.trim(),
+      source: 'model',
+      model: typeof body.model === 'string' ? body.model : undefined,
+    }
   } catch {
     return fallback
   }

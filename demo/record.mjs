@@ -14,14 +14,6 @@ const context = await browser.newContext({
 })
 const page = await context.newPage()
 
-const step = async (label, fn) => {
-  try {
-    await fn()
-  } catch (e) {
-    console.log('  ! ' + label + ': ' + String(e).slice(0, 90))
-  }
-}
-
 await page.goto('http://localhost:5173/', { waitUntil: 'networkidle' })
 await page.waitForSelector('text=Climate exposure across the corporate book', { timeout: 15000 })
 await wait(7000)

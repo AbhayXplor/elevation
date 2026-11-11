@@ -80,9 +80,9 @@ export function Sidebar() {
           </p>
         </div>
         <p className="px-1 text-[10px] leading-relaxed text-ink-4">
-          Copernicus DEM · Overture · ERA5
+          Real hazard data: Copernicus · Overture · ERA5
           <br />
-          Illustrative institution data
+          Synthetic book, calibrated to a UAE mid-market lender
         </p>
       </div>
     </aside>
