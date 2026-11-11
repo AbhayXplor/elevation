@@ -48,7 +48,7 @@ export function Evidence() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[1180px] space-y-4 px-5 py-5">
+      <div className="mx-auto max-w-[1180px] space-y-4 px-4 py-4 sm:px-5 sm:py-5">
         <div>
           <h2 className="text-[19px] font-semibold tracking-[-0.025em] text-ink">
             Model &amp; evidence
@@ -60,7 +60,7 @@ export function Evidence() {
         </div>
 
         {/* headline validation */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Panel className="p-4">
             <Label>April 2024 agreement</Label>
             <div className="mt-2.5 flex items-baseline gap-1.5">
@@ -134,7 +134,7 @@ export function Evidence() {
           </Panel>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {/* flood model */}
           <Panel>
             <PanelHeader
@@ -144,7 +144,7 @@ export function Evidence() {
             <div className="mt-3 space-y-2">
               {Object.entries(model.flood.parameters.weights).map(([k, w]) => (
                 <div key={k} className="flex items-center gap-3">
-                  <span className="w-[168px] shrink-0 text-[11px] text-ink-2">
+                  <span className="w-[124px] shrink-0 text-[11px] text-ink-2 sm:w-[168px]">
                     {k.replaceAll('_', ' ')}
                   </span>
                   <div className="flex-1">
@@ -252,7 +252,7 @@ export function Evidence() {
               }
             />
           </div>
-          <div className="grid grid-cols-4 gap-px border-t border-line bg-line">
+          <div className="grid grid-cols-2 gap-px border-t border-line bg-line sm:grid-cols-4">
             {sortedSites.map((s) => (
               <div key={s.label} className="flex items-center gap-2 bg-surface px-3 py-2">
                 <span
@@ -268,7 +268,7 @@ export function Evidence() {
           </div>
         </Panel>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Panel flush>
             <div className="px-4 pb-2.5 pt-4">
               <PanelHeader title="Data sources" hint="All keyless, all reproducible" />

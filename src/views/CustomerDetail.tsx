@@ -112,7 +112,7 @@ export function CustomerDetail({ id }: { id: string }) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[1180px] px-5 py-4">
+      <div className="mx-auto max-w-[1180px] px-4 py-4 sm:px-5">
         <button
           onClick={() => setSelectedCustomer(null)}
           className="mb-3 flex items-center gap-1.5 text-[11.5px] text-ink-3 transition-colors hover:text-ink"
@@ -120,10 +120,12 @@ export function CustomerDetail({ id }: { id: string }) {
           <ArrowLeft size={13} /> Borrower register
         </button>
 
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-[21px] font-semibold tracking-[-0.03em] text-ink">{c.name}</h2>
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h2 className="text-[19px] font-semibold tracking-[-0.03em] text-ink sm:text-[21px]">
+                {c.name}
+              </h2>
               <span className="rounded border border-line-2 px-1.5 py-0.5 text-[10px] text-ink-3">
                 {c.rating}
               </span>
@@ -132,9 +134,9 @@ export function CustomerDetail({ id }: { id: string }) {
               {c.sector} · {c.segment} · {c.facilities.length} facilities · {c.tenorYears}-year tenor
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <span
-              className="rounded-md border px-2.5 py-1 text-[11px] font-medium"
+              className="whitespace-nowrap rounded-md border px-2.5 py-1 text-[11px] font-medium"
               style={{
                 color: DETERMINATION_COLOR[det.state],
                 borderColor: `${DETERMINATION_COLOR[det.state]}40`,
@@ -216,7 +218,7 @@ export function CustomerDetail({ id }: { id: string }) {
           average.
         </p>
 
-        <div className="mt-4 grid grid-cols-4 gap-3">
+        <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi
             label="Exposure"
             value={money(c.exposure)}
@@ -248,15 +250,15 @@ export function CustomerDetail({ id }: { id: string }) {
           />
         </div>
 
-        <div className="mt-3 grid grid-cols-[1.5fr_1fr] gap-3">
-          <Panel flush>
+        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[1.5fr_1fr]">
+          <Panel flush className="overflow-x-auto">
             <div className="px-4 pb-3 pt-4">
               <PanelHeader
                 title="Facilities"
                 hint="Each site is a real building footprint with its own modelled depth"
               />
             </div>
-            <table className="w-full">
+            <table className="w-full min-w-[560px]">
               <thead>
                 <tr className="bg-surface-2/50">
                   {['Site', 'Area', 'Height', 'Pluvial', 'Depth', 'Damage', 'Loss'].map((h, i) => (

@@ -41,9 +41,9 @@ export function MapView() {
   const atRisk = facilities.filter((f) => (hazard === 'heat' ? f.heatScore : f.floodScore) >= 55).length
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:overflow-hidden">
       {/* toolbar */}
-      <div className="flex h-[48px] shrink-0 items-center gap-4 border-b border-line bg-surface px-5">
+      <div className="flex min-h-[48px] shrink-0 items-center gap-4 border-b border-line bg-surface px-3 sm:px-5">
         <div className="flex items-center gap-2">
           <Label>Layer</Label>
           <Segmented<Hazard>
@@ -58,9 +58,9 @@ export function MapView() {
           />
         </div>
 
-        <div className="h-4 w-px bg-line" />
+        <div className="hidden h-4 w-px bg-line lg:block" />
 
-        <div className="flex items-center gap-2.5">
+        <div className="hidden items-center gap-2.5 lg:flex">
           <Label>Scale</Label>
           <div className="relative h-[7px] w-[130px] overflow-hidden rounded-full">
             <div
@@ -80,7 +80,7 @@ export function MapView() {
         </div>
 
         <div className="ml-auto flex items-center gap-4 text-[11px]">
-          <span className="text-ink-3">
+          <span className="hidden text-ink-3 sm:inline">
             Facilities <span className="mono text-ink">{facilities.length}</span>
           </span>
           <span className="text-ink-3">
@@ -92,27 +92,29 @@ export function MapView() {
         </div>
       </div>
 
-      {/* map */}
-      <div className="relative flex-1">
-        <MapCanvas
-          className="absolute inset-0"
-          facilities={facilities}
-          overlay={hazard}
-          scenario={scenario}
-          focus={focus}
-          selectedCustomer={selectedCustomer}
-          onPickCustomer={(id) => {
-            setSelectedCustomer(id)
-            setView('portfolio')
-          }}
-        />
+      {/* map — a fixed band on phones, the whole panel from `lg` up */}
+      <div className="relative flex flex-1 flex-col lg:block lg:overflow-hidden">
+        <div className="relative h-[44vh] shrink-0 lg:absolute lg:inset-0 lg:h-auto">
+          <MapCanvas
+            className="absolute inset-0"
+            facilities={facilities}
+            overlay={hazard}
+            scenario={scenario}
+            focus={focus}
+            selectedCustomer={selectedCustomer}
+            onPickCustomer={(id) => {
+              setSelectedCustomer(id)
+              setView('portfolio')
+            }}
+          />
+        </div>
 
-        <div className="absolute right-3 top-3 w-[286px] overflow-hidden rounded-[10px] border border-line-2 bg-canvas/92 backdrop-blur-md">
+        <div className="mx-3 mb-3 mt-3 overflow-hidden rounded-[10px] border border-line-2 bg-surface lg:absolute lg:right-3 lg:top-3 lg:m-0 lg:w-[286px] lg:bg-canvas/92 lg:backdrop-blur-md">
           <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
             <span className="text-[11.5px] font-medium text-ink">Highest {hazard === 'heat' ? 'heat' : 'pluvial'} exposure</span>
             <span className="text-[10px] text-ink-4">of {facilities.length}</span>
           </div>
-          <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
+          <div className="overflow-y-auto lg:max-h-[calc(100vh-260px)]">
             {ranked.map((f) => {
               const score = hazard === 'heat' ? f.heatScore : f.floodScore
               return (
@@ -155,7 +157,7 @@ export function MapView() {
         </div>
 
         {/* portfolio summary chip */}
-        <Panel className="absolute bottom-3 left-3 w-[248px] bg-canvas/92 p-3 backdrop-blur-md">
+        <Panel className="mx-3 mb-3 bg-surface p-3 lg:absolute lg:bottom-3 lg:left-3 lg:m-0 lg:w-[248px] lg:bg-canvas/92 lg:backdrop-blur-md">
           <Label>Book at a glance</Label>
           <div className="mt-2 space-y-1.5">
             <Line k="Exposure" v={`AED ${money(portfolio.totals.exposure)}`} />

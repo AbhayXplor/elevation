@@ -23,7 +23,7 @@ export function Sidebar() {
   const { view, setView, setSelectedCustomer } = useStore()
 
   return (
-    <aside className="flex w-[222px] shrink-0 flex-col border-r border-line bg-surface">
+    <aside className="hidden w-[222px] shrink-0 flex-col border-r border-line bg-surface lg:flex">
       <div className="flex items-center gap-2.5 px-4 pb-4 pt-[18px]">
         <img src="/mark.svg" alt="" className="h-7 w-7" />
         <div className="leading-none">
@@ -89,20 +89,64 @@ export function Sidebar() {
   )
 }
 
+const SHORT: Record<ViewId, string> = {
+  overview: 'Overview',
+  map: 'Map',
+  portfolio: 'Borrowers',
+  evidence: 'Evidence',
+  report: 'CRFR2',
+}
+
+/** Bottom tab bar, the only navigation below `lg` where the sidebar is hidden. */
+export function MobileNav() {
+  const { view, setView, setSelectedCustomer } = useStore()
+
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface/95 backdrop-blur-md lg:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      {NAV.map((item) => {
+        const Icon = item.icon
+        const active = view === item.id
+        return (
+          <button
+            key={item.id}
+            onClick={() => {
+              setSelectedCustomer(null)
+              setView(item.id)
+            }}
+            aria-current={active ? 'page' : undefined}
+            className={cn(
+              'flex flex-1 flex-col items-center gap-1 pb-1.5 pt-2 transition-colors',
+              active ? 'text-accent' : 'text-ink-3',
+            )}
+          >
+            <Icon size={18} strokeWidth={active ? 2.1 : 1.8} />
+            <span className="text-[9.5px] font-medium leading-none">{SHORT[item.id]}</span>
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
 export function TopBar({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
   const { scenario, setScenario } = useStore()
 
   return (
-    <header className="flex h-[52px] shrink-0 items-center justify-between border-b border-line bg-surface px-5">
-      <div className="flex items-baseline gap-2.5">
-        <h1 className="text-[13.5px] font-semibold tracking-[-0.015em] text-ink">{title}</h1>
-        {subtitle && <span className="text-[11.5px] text-ink-3">{subtitle}</span>}
+    <header className="flex h-[52px] shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-3 sm:px-5">
+      <div className="flex min-w-0 items-baseline gap-2.5">
+        <h1 className="truncate text-[13.5px] font-semibold tracking-[-0.015em] text-ink">
+          {title}
+        </h1>
+        {subtitle && <span className="hidden truncate text-[11.5px] text-ink-3 sm:inline">{subtitle}</span>}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-3">
         {right}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-medium uppercase tracking-[0.09em] text-ink-4">
+          <span className="hidden text-[10px] font-medium uppercase tracking-[0.09em] text-ink-4 sm:inline">
             Scenario
           </span>
           <Segmented<Scenario>

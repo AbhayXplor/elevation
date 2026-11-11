@@ -55,8 +55,8 @@ function Register({ scenario }: { scenario: Scenario }) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[1180px] space-y-4 px-5 py-5">
-        <div className="flex items-end justify-between gap-4">
+      <div className="mx-auto max-w-[1180px] space-y-4 px-4 py-4 sm:px-5 sm:py-5">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h2 className="text-[19px] font-semibold tracking-[-0.025em] text-ink">
               Borrower register
@@ -66,8 +66,8 @@ function Register({ scenario }: { scenario: Scenario }) {
               facilities
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <div className="relative w-full sm:w-auto">
               <Search
                 size={13}
                 className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-4"
@@ -77,7 +77,7 @@ function Register({ scenario }: { scenario: Scenario }) {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search borrower, sector or district"
-                className="h-8 w-[248px] rounded-md border border-line-2 bg-surface-2 pl-8 pr-3 text-[12px] text-ink placeholder:text-ink-4 outline-none transition-colors focus:border-accent/45"
+                className="h-8 w-full rounded-md border border-line-2 bg-surface-2 pl-8 pr-3 text-[12px] text-ink placeholder:text-ink-4 outline-none transition-colors focus:border-accent/45 sm:w-[220px]"
               />
             </div>
             <Segmented<Seg>
@@ -93,8 +93,8 @@ function Register({ scenario }: { scenario: Scenario }) {
           </div>
         </div>
 
-        <Panel flush className="overflow-hidden">
-          <table className="w-full">
+        <Panel flush className="overflow-x-auto">
+          <table className="w-full min-w-[720px]">
             <thead>
               <tr className="bg-surface-2/60">
                 {head.map((h) => (

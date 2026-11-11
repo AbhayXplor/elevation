@@ -36,6 +36,10 @@ actually get.
 Five screens and a borrower drill-down, over one book: 27 borrowers, 68 geocoded facilities,
 AED 5.69bn of exposure secured on AED 7.61bn of collateral.
 
+The layout is responsive down to a 390 px phone, since the pitch uses a QR code: the sidebar
+becomes a bottom tab bar, panels stack, and the wide tables scroll inside their own panel
+rather than pushing the page sideways.
+
 | Screen | What it answers |
 |---|---|
 | **Overview** | Where the risk sits across the book: exposure, 1-in-100 loss, expected annual loss, LTV breaches, by district and by forward scenario. |

@@ -34,9 +34,9 @@ export function Overview() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[1180px] space-y-4 px-5 py-5">
+      <div className="mx-auto max-w-[1180px] space-y-4 px-4 py-4 sm:px-5 sm:py-5">
         {/* header */}
-        <div className="flex items-end justify-between gap-6">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <div>
             <h2 className="text-[19px] font-semibold tracking-[-0.025em] text-ink">
               Climate exposure across the corporate book
@@ -53,7 +53,7 @@ export function Overview() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi
             label="Assessed exposure"
             value={money(t.exposure)}
@@ -87,7 +87,7 @@ export function Overview() {
         </div>
 
         {/* middle row */}
-        <div className="grid grid-cols-[1.45fr_1fr] gap-3">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.45fr_1fr]">
           <Panel flush className="p-4">
             <PanelHeader
               title="Secured value by district"
@@ -220,7 +220,7 @@ export function Overview() {
         </div>
 
         {/* priority accounts */}
-        <Panel flush>
+        <Panel flush className="overflow-x-auto">
           <div className="flex items-center justify-between px-4 pb-3 pt-4">
             <PanelHeader
               title="Priority accounts"
@@ -231,7 +231,7 @@ export function Overview() {
             </Button>
           </div>
           <div className="border-t border-line">
-            <table className="w-full">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="text-left">
                   {['Borrower', 'Sector', 'Exposure', 'Pluvial', 'Depth', 'LTV', 'Haircut', ''].map(

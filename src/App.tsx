@@ -1,5 +1,5 @@
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import { Sidebar, TopBar } from '@/components/Shell'
+import { MobileNav, Sidebar, TopBar } from '@/components/Shell'
 import { StoreProvider, useStore } from '@/lib/store'
 import { portfolio } from '@/lib/portfolio'
 import { Overview } from '@/views/Overview'
@@ -21,9 +21,9 @@ function Shell() {
   const meta = META[view] ?? META.overview
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-canvas">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-canvas">
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col pb-[58px] lg:pb-0">
         <TopBar title={meta.title} subtitle={meta.subtitle} />
         {view === 'overview' && <Overview />}
         {view === 'map' && <MapView />}
@@ -31,6 +31,7 @@ function Shell() {
         {view === 'evidence' && <Evidence />}
         {view === 'report' && <Report />}
       </div>
+      <MobileNav />
     </div>
   )
 }

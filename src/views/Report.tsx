@@ -94,7 +94,7 @@ export function Report() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[1180px] space-y-4 px-5 py-5">
+      <div className="mx-auto max-w-[1180px] space-y-4 px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-[19px] font-semibold tracking-[-0.025em] text-ink">
@@ -118,7 +118,7 @@ export function Report() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {(['Subject', 'Cannot determine', 'Not subject'] as const).map((k) => {
             const list = counts[k]
             const exp = list.reduce((s, r) => s + r.c.exposure, 0)
@@ -153,7 +153,7 @@ export function Report() {
           })}
         </div>
 
-        <Panel flush className="overflow-hidden">
+        <Panel flush className="overflow-x-auto">
           <div className="px-4 pb-3 pt-4">
             <PanelHeader
               title="Exposure determination"
@@ -165,7 +165,7 @@ export function Report() {
               }
             />
           </div>
-          <table className="w-full">
+          <table className="w-full min-w-[680px]">
             <thead>
               <tr className="bg-surface-2/60">
                 {['Borrower', 'Exposure', 'Determination', 'Basis', 'Pluvial', 'Haircut', 'Source'].map(
@@ -216,7 +216,7 @@ export function Report() {
           </table>
         </Panel>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Panel>
             <PanelHeader title="Methodology statement" hint="For the annual assessment file" />
             <div className="mt-3 space-y-2.5 text-[11px] leading-relaxed text-ink-3">
