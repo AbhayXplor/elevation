@@ -123,6 +123,7 @@ export function MapView() {
                   onClick={() => {
                     setFocus([f.lon, f.lat])
                     setSelectedCustomer(f.customerId)
+                    setView('portfolio')
                   }}
                   className="flex w-full items-center gap-2.5 border-b border-line/60 px-3 py-2 text-left transition-colors last:border-0 hover:bg-white/[0.035]"
                 >

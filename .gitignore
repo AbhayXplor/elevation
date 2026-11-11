@@ -36,3 +36,10 @@ lerna-debug.log*
 .env
 .env.*
 !.env.example
+
+# Demo media (large; regenerate with demo/record.mjs)
+demo/out/
+demo/*.wav
+demo/*.pcm
+demo/fonts/
+demo/rec.log
