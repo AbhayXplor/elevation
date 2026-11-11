@@ -41,6 +41,7 @@ export function Sidebar() {
           return (
             <button
               key={item.id}
+              data-tour={`nav-${item.id}`}
               onClick={() => {
                 // Navigating from the sidebar returns to the list, not the last
                 // borrower that happened to be open.
@@ -112,6 +113,7 @@ export function MobileNav() {
         return (
           <button
             key={item.id}
+            data-tour={`nav-${item.id}`}
             onClick={() => {
               setSelectedCustomer(null)
               setView(item.id)
@@ -145,7 +147,7 @@ export function TopBar({ title, subtitle, right }: { title: string; subtitle?: s
 
       <div className="flex shrink-0 items-center gap-3">
         {right}
-        <div className="flex items-center gap-2">
+        <div data-tour="scenario" className="flex items-center gap-2 rounded-md">
           <span className="hidden text-[10px] font-medium uppercase tracking-[0.09em] text-ink-4 sm:inline">
             Scenario
           </span>

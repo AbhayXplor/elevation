@@ -53,7 +53,7 @@ export function Overview() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div data-tour="overview-kpis" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi
             label="Assessed exposure"
             value={money(t.exposure)}
